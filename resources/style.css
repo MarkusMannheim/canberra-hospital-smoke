@@ -60,6 +60,9 @@ body {
   fill: #00A388;
   font-size: .8rem;
 }
+.lineLabel:last-child {
+  text-anchor: middle;
+}
 h1 {
   font-family: "ABCSans Black", "Arial Black", sans-serif;
   font-size: 1.5rem;
