@@ -39,91 +39,65 @@ body {
   width: 100%;
   height: 100%;
 }
-#axisGroup .tick line, #axisGroup .domain  {
-  stroke: #1C1C1C;
-  path: #1C1C1C;
-  stroke-dasharray: 2 4;
-  opacity: .5;
-}
-#axisGroup text {
-  fill: #1C1C1C;
-  font-size: .7rem;
-}
-#axisGroup .axisLabel {
-  font-family: "ABCSans Black", "Arial Black", sans-serif;
-  font-size: .9rem;
-  text-anchor: middle;
-  opacity: 0;
-}
-#yAxisGroup .axisLabel {
+.label {
   text-anchor: start;
-}
-#tip {
-  position: absolute;
-  opacity: 0;
-  padding: 5px;
-  border-radius: 5px;
-  background-color: rgba(28, 28, 28, .75);
-  pointer-events: none;
-  color: white;
-}
-#tip p, #tip h1 {
-  margin: 0;
-}
-#tip h1 {
-  font-family: "ABCSans Black", "Arial Black", sans-serif;
   font-size: 1rem;
-  padding-bottom: .5rem;
+  fill: #1C1C1C;
 }
-#tip p {
+.pol1 {
+  fill: #01CFFF;
+}
+.pol2 {
+  fill: #FF6100;
+}
+.line {
+  stroke: #00A388;
+  stroke-width: 2;
+  stroke-dasharray: 2 3;
+  opacity: .75;
+}
+.lineLabel {
+  fill: #00A388;
   font-size: .8rem;
 }
-#tip span {
-  font-size: .7rem;
-  font-family: "ABCSans Light", "Arial Narrow", sans-serif;
+h1 {
+  font-family: "ABCSans Black", "Arial Black", sans-serif;
+  font-size: 1.5rem;
+  opacity: .5;
+  margin: 0;
 }
-.suburb {
-  opacity: .75;
-  stroke: #1C1C1C;
-  stroke-width: .5;
-  pointer-events: none;
+p {
+  margin: 0;
+  font-weight: bold;
+  font-weight: .9rem;
 }
-.selected .suburb {
-  opacity: 1;
-  stroke-width: 1;
+#title p {
+  padding-bottom: 1rem;
 }
-.voronoi {
-  fill: rgba(0, 0, 0, 0);
+.value {
+  font-family: "ABCSans Black", "Arial Black", sans-serif;
+  fill: white;
 }
-.label {
-  fill: #1C1C1C;
-  font-family: "ABCSans Light", "Arial Narrow", sans-serif;
-  font-size: .6rem;
-  text-anchor: middle;
-  opacity: 0;
-  pointer-events: none;
+.key {
+  display: flex;
+  font-size: .9rem;
+  color: #009CBF;
+  text-transform: uppercase;
 }
-.label.visible {
-  opacity: 1;
+.key div:first-child {
+  width: 1rem;
+  height: 1rem;
+  margin-right: .5rem;
 }
-select {
-  position: fixed;
-  right: 0;
-  border: none;
+.key:first-child div:first-child {
   background-color: #01CFFF;
-  color: white;
-  font-family: "ABCSans Black", "Arial Black", sans-serif;
-  font-size: 1rem;
-  padding: 5px;
-  border-radius: 5px;
-  outline: none;
-  text-align-last: right;
 }
-option {
-  color: #1C1C1C;
-  background-color: white;
-  font-family: "ABCSans Black", "Arial Black", sans-serif;
-  direction: rtl;
+.key:last-child div:first-child {
+  background-color: #FF6100;
+}
+.key:last-child {
+  padding-bottom: 1rem;
+  color: #F75F00;
 }
 @media only screen and (min-width: 639px) {
 }
