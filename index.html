@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <!-- Google Analytics -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=UA-155991615-1"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag("js", new Date());
+      gtag("config", "UA-155991615-1");
+    </script>
+    <!-- my stuff -->
+    <meta charset="utf-8">
+    <title>Vulnerable suburbs of Canberra-Queanbeyan</title>
+    <meta name="author" content="Markus Mannheim">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+    <link href="./resources/chartStyle.css" rel="stylesheet">
+    <link href="./resources/abcLogo64.png" rel="icon">
+  </head>
+  <body>
+    <!-- initial layout -->
+    <div id="container">
+      <svg id="chart">
+        <g id="chartGroup"></g>
+        <g id="axisGroup">
+          <g id="xAxisGroup">
+            <text y="30" class="axisLabel">Housing finances stress</text>
+          </g>
+          <g id="yAxisGroup">
+            <text y="15" class="axisLabel">Job vulnerability</text>
+          </g>
+        </g>
+      </svg>
+    </div>
+    <select onchange="changeSelector()">
+    </select>
+    <div id="tip"></div>
+    <script>
+      // load scraped data (with in-built cache refresh)
+      d3.csv("./resources/suburb_data.csv", function(error, data) {
+        if (error) throw error;
+        covidData = data;
+        // format data
+        household_max = d3.max(covidData, function(d) { return +d.household_stress; });
+        employment_max = d3.max(covidData, function(d) { return +d.employment_vulnerability; });
+        covidData.forEach(function(d) {
+          for (key in d) {
+            if (key !== "suburb") {
+              d[key] = +d[key];
+            }
+          }
+          d.index = d.household_stress / household_max / 2 + d.employment_vulnerability / employment_max / 2;
+        });
+        // fill selector
+        selector = d3.select("select");
+        selector.selectAll("option")
+            .data(covidData)
+          .enter().append("option")
+            .property("value", function(d) { return d.suburb; })
+            .text(function(d) { return d.suburb; });
+        selector.append("option")
+          .property("disabled", true)
+          .property("hidden", true)
+          .property("selected", true)
+          .text("select suburb");
+        // circle scales
+        colour = d3.scaleSequential(d3.interpolateSpectral)
+          .domain(d3.extent(covidData, function(d) { return d.index; }).reverse());
+        population = d3.scaleLinear()
+          .domain(d3.extent(covidData, function(d) { return d.population; }))
+          .range([4, 15]);
+        // establish page elements
+        margin = { top: 25, right: 15, bottom: 35, left: 30};
+        chart = d3.select("#chart");
+        chartGroup = d3.select("#chartGroup");
+        axisGroup = d3.select("#axisGroup");
+        xAxisGroup = d3.select("#xAxisGroup");
+        yAxisGroup = d3.select("#yAxisGroup")
+          .attr("transform", "translate(" + margin.left + ", 0)");
+        tip = d3.select("#tip");
+        // redraws page when it's resized
+        window.addEventListener("resize", resize);
+        // prepare chart
+        x = d3.scaleLinear()
+          .domain(d3.extent(covidData, function(d) { return d.household_stress; })).nice();
+        y = d3.scaleLinear()
+          .domain(d3.extent(covidData, function(d) { return d.employment_vulnerability; })).nice();
+        // voronoi
+        voronoi = d3.voronoi()
+          .x(function(d) { return x(d.household_stress); })
+          .y(function(d) { return y(d.employment_vulnerability); });
+        resize();
+        labelCheck();
+      });
+      function resize() {
+        let dimensions = document.body
+          .getBoundingClientRect();
+        width = dimensions.width;
+        height = dimensions.height;
+        x.range([margin.left, width - margin.right]);
+        xAxis = d3.axisBottom(x)
+          .ticks(4, ".0%")
+          .tickSizeInner(margin.top + margin.bottom - height)
+          .tickSizeOuter(0)
+          .tickPadding(5);
+        xAxisGroup.attr("transform", "translate(0, " + (height - margin.bottom) + ")");
+        xAxisGroup.select(".axisLabel")
+          .attr("x", (width - margin.left - margin.right) / 2 + margin.left)
+          .style("opacity", 1);
+        yAxisGroup.select(".axisLabel")
+          .attr("x", -margin.left)
+          .style("opacity", 1);
+        y.range([height - margin.bottom, margin.top]);
+        yAxis = d3.axisLeft(y)
+          .ticks(4, ".0%")
+          .tickSizeInner(margin.left + margin.right - width)
+          .tickSizeOuter(0)
+          .tickPadding(5);
+        xAxisGroup.call(xAxis);
+        yAxisGroup.call(yAxis);
+        voronoi.size([width, height]);
+        // draw chart
+        cells = chartGroup
+          .selectAll(".cell")
+            .data(voronoi.polygons(covidData, function(d) { return d.data.suburb; }));
+        cells.exit()
+          .remove();
+        cells.select(".suburb")
+          .attr("cx", function(d) { return x(d.data.household_stress); })
+          .attr("cy", function(d) { return y(d.data.employment_vulnerability); })
+          .style("fill", function(d) { return colour(d.data.index); });
+        cells.select(".voronoi")
+          .attr("d", function(d) { return !d ? null : d3.line()(d) + "Z"; });
+        cells.select(".label")
+          .attr("x", function(d) { return x(d.data.household_stress); })
+          .attr("y", function(d) { return y(d.data.employment_vulnerability) + population(d.data.population) + 10; });
+        entering = cells
+          .enter().append("g")
+            .classed("cell", true);
+        entering.append("path")
+          .classed("voronoi", "true")
+          .attr("d", function(d) { return !d ? null : d3.line()(d) + "Z"; });
+        entering.select(".voronoi")
+          .on("mouseover", mouseover)
+          .on("mouseout", mouseout)
+          .on("touchend", touchend);
+        entering.append("circle")
+          .classed("suburb", true)
+          .attr("r", function(d) { return population(d.data.population); })
+          .style("fill", function(d) { return colour(d.data.index); })
+          .attr("cx", function(d) { return x(d.data.household_stress); })
+          .attr("cy", function(d) { return y(d.data.employment_vulnerability); });
+        entering.append("text")
+          .classed("label", true)
+          .text(function(d) { return d.data.suburb; })
+          .attr("x", function(d) { return x(d.data.household_stress); })
+          .attr("y", function(d) { return y(d.data.employment_vulnerability) + population(d.data.population) + 10; });
+      }
+      function touchend(d) {
+        if (this.classList.contains("touched")) {
+          this.classList.remove("touched");
+          selector.selectAll("option")
+            .filter(function() { return this.disabled; })
+            .property("selected", true);
+          mouseout();
+        } else {
+          this.classList.add("touched");
+          d3.select(this.parentNode)
+            .classed("selected", true)
+            .raise();
+          d3.select(this.parentNode)
+            .select(".suburb")
+            .attr("r", function(d) { return population(d.data.population) + 10; });
+          d3.selectAll("option")
+            .classed("selected", false);
+          d3.selectAll("option")
+            .filter(function() { return !this.disabled; })
+            .filter(function(e) { return e.suburb == d.data.suburb; })
+            .property("selected", true);
+          switchOn(d);
+        }
+      }
+      function switchOn(d) {
+        centroid = [x(d.data.household_stress), y(d.data.employment_vulnerability)];
+        tip.style("opacity", 0)
+          .style("top", "0px") // reset position to tool tip for correct sizing
+          .style("left", "0px")
+          .html("<h1>" + d.data.suburb + "</h1>" // re-write tool tip content
+              + "<p>" + d3.format(",")(d.data.households) + " households</p>"
+              + "<p><span>\u2003" + d3.format(",")(d.data.rent_stress) + " in rental stress</span></p>"
+              + "<p><span>\u2003" + d3.format(",")(d.data.mortgage_stress) + " in mortgage stress</span></p>"
+              + "<p>" + d3.format(",")(d.data.population) + " people</p>"
+              + "<p>" + d3.format(",")(d.data.employment) + " vulnerable workers</p>"
+              + "<p><span>\u2003" + d3.format(",")(d.data.community) + " community/personal service</span></p>"
+              + "<p><span>\u2003" + d3.format(",")(d.data.sales) + " sales workers</span></p>"
+              + "<p><span>\u2003" + d3.format(",")(d.data.labourers) + " labourers</span></p>"
+              + "<p><span>\u2003" + d3.format(",")(d.data.accommodation) + " in accommodation & food</p>"
+              + "<p><span>\u2003" + d3.format(",")(d.data.arts) + " in arts & recreation</p>"
+              + "<p><span>\u2003" + d3.format(",")(d.data.retail) + " in retail</span></p>");
+        // set location of tool tip to ensure it's always inside chart
+        let tipWidth = parseFloat(tip.style("width"));
+        let tipHeight = parseFloat(tip.style("height"));
+        tip.style("top", function() {
+          return centroid[1] + tipHeight + 32 > height ?
+            (centroid[1] - tipHeight - 32) + "px":
+            (centroid[1] + 16) + "px";
+          })
+          .style("left", function() {
+            return centroid[0] + (tipWidth / 2) + 16 > width ?
+              (width - tipWidth - 16) + "px" :
+              centroid[0] - (tipWidth / 2) - 16 < 0 ?
+              "16px" :
+              (centroid[0] - (tipWidth / 2)) + "px";
+          })
+          .style("opacity", 1);
+        labelCheck();
+      }
+      function mouseover(d) {
+        d3.select(this.parentNode)
+          .classed("selected", true)
+          .raise();
+        d3.select(this.parentNode)
+          .select(".suburb")
+          .attr("r", function(d) { return population(d.data.population) + 10; });
+        d3.selectAll("option")
+          .classed("selected", false);
+        d3.selectAll("option")
+          .filter(function() { return !this.disabled; })
+          .filter(function(e) { return e.suburb == d.data.suburb; })
+          .property("selected", true);
+        switchOn(d);
+      }
+      function mouseout() {
+        d3.selectAll(".cell")
+          .classed("selected", false);
+        d3.selectAll(".suburb")
+          .attr("r", function(d) { return population(d.data.population); });
+        tip.style("opacity", 0);
+      }
+      function labelCheck() {
+        labels = d3.selectAll(".label");
+        labels.each(function(d) {
+          let coords = [x(d.data.household_stress), y(d.data.employment_vulnerability)];
+          let others = covidData.filter(function(e) { return e.suburb !== d.data.suburb; });
+          i = 0;
+          let visible = true;
+          while (i < others.length) {
+            let tempCoords = [x(others[i].household_stress), y(others[i].employment_vulnerability)]
+            let link = Math.sqrt(Math.pow(d3.max([coords[0], tempCoords[0]]) - d3.min([coords[0], tempCoords[0]]), 2) + Math.pow(d3.max([coords[1], tempCoords[1]]) - d3.min([coords[1], tempCoords[1]]), 2));
+            if (link < 24) {
+              visible = false;
+              break;
+            }
+            i++;
+          }
+          d3.select(this)
+            .classed("visible", visible);
+        });
+      }
+      function changeSelector() {
+        mouseout();
+        let selection = selector.property("value");
+        d3.selectAll(".voronoi")
+          .classed("touched", false);
+        let node = d3.selectAll(".cell")
+          .filter(function(d) {
+            return d.data.suburb == selection;
+          });
+        node.classed("selected", true)
+          .raise()
+          .select(".suburb")
+          .attr("r", function(d) { nodeData = d; return population(d.data.population) + 10; });
+        d3.selectAll(".voronoi")
+          .style("pointer-events", "none");
+        d3.timeout(function() {
+          d3.selectAll(".voronoi")
+            .style("pointer-events", "all");
+        }, 1000);
+        switchOn(nodeData);
+      }
+    </script>
+  </body>
+</html>
