@@ -63,6 +63,7 @@
         { name: "very unhealthy for all", threshold: 107 },
       ];
       // page elements
+      container = d3.select("#container");
       margin = parseFloat(d3.select("#header").style("height"));
       chart = d3.select("#chart");
       chartGroup = d3.select("#chartGroup");
@@ -71,51 +72,55 @@
       // scales
       x = d3.scaleLinear()
         .domain([0, 160]);
-      // set up chart
-      bars = chartGroup
-        .selectAll(".bar")
-          .data(data)
-        .enter().append("g")
-          .classed("bar", true);
-      bars.append("text")
-        .classed("label", true)
-          .text(function(d) { return d.area; })
-          .attr("x", 0)
-          .attr("y", function(d, i) { return i < 2 ? margin + i * 100 + 16 : margin + i * 100 - 14; });
-      bars.append("rect")
-        .classed("pol1", true)
-          .attr("y", function(d, i) { return i < 2 ? margin + i * 100 + 24 : margin + i * 100 - 6; })
-          .attr("height", 25);
-      bars.append("rect")
-        .classed("pol2", true)
-          .attr("y", function(d, i) { return i < 2 ? margin + i * 100 + 54 : margin + i * 100 + 24; })
-          .attr("height", 25);
-      bars.append("text")
-        .classed("value", true)
-          .text(function(d) { return d.pol1; })
-          .attr("x", 10)
-          .attr("y", function(d, i) { return i < 2 ? margin + i * 100 + 42 : margin + i * 100 + 12; });
-      bars.append("text")
-        .classed("value", true)
-          .text(function(d) { return d.pol1; })
-          .attr("x", 10)
-          .attr("y", function(d, i) { return i < 2 ? margin + i * 100 + 72 : margin + i * 100 + 42; });
-      lines = chartGroup
-        .selectAll(".line")
-          .data(thresholds)
-        .enter().append("line")
-          .classed("line", true)
-          .attr("y1", margin + 24)
-          .attr("y2", function(d, i) { return margin + data.length * 100 - 37 - i * 28; });
-      lineLabels = chartGroup
-        .selectAll(".lineLabel")
-          .data(thresholds)
-        .enter().append("text")
-          .classed("lineLabel", true)
-          .attr("y", function(d, i) { return margin + data.length * 100 - 26 - i * 28; })
-          .text(function(d) { return d.name; });
-      window.addEventListener("resize", resize);
-      resize();
+      // delay for fonts etc
+      d3.timeout(function() {
+        // set up chart
+        bars = chartGroup
+          .selectAll(".bar")
+            .data(data)
+          .enter().append("g")
+            .classed("bar", true);
+        bars.append("text")
+          .classed("label", true)
+            .text(function(d) { return d.area; })
+            .attr("x", 0)
+            .attr("y", function(d, i) { return i < 2 ? margin + i * 100 + 16 : margin + i * 100 - 14; });
+        bars.append("rect")
+          .classed("pol1", true)
+            .attr("y", function(d, i) { return i < 2 ? margin + i * 100 + 24 : margin + i * 100 - 6; })
+            .attr("height", 25);
+        bars.append("rect")
+          .classed("pol2", true)
+            .attr("y", function(d, i) { return i < 2 ? margin + i * 100 + 54 : margin + i * 100 + 24; })
+            .attr("height", 25);
+        bars.append("text")
+          .classed("value", true)
+            .text(function(d) { return d.pol1; })
+            .attr("x", 10)
+            .attr("y", function(d, i) { return i < 2 ? margin + i * 100 + 42 : margin + i * 100 + 12; });
+        bars.append("text")
+          .classed("value", true)
+            .text(function(d) { return d.pol1; })
+            .attr("x", 10)
+            .attr("y", function(d, i) { return i < 2 ? margin + i * 100 + 72 : margin + i * 100 + 42; });
+        lines = chartGroup
+          .selectAll(".line")
+            .data(thresholds)
+          .enter().append("line")
+            .classed("line", true)
+            .attr("y1", margin + 24)
+            .attr("y2", function(d, i) { return margin + data.length * 100 - 37 - i * 28; });
+        lineLabels = chartGroup
+          .selectAll(".lineLabel")
+            .data(thresholds)
+          .enter().append("text")
+            .classed("lineLabel", true)
+            .attr("y", function(d, i) { return margin + data.length * 100 - 26 - i * 28; })
+            .text(function(d) { return d.name; });
+        window.addEventListener("resize", resize);
+        resize();
+        container.style("display", "block");
+      }, 2500);
       function resize() {
         dimensions = document.body.getBoundingClientRect();
         width = dimensions.width;
